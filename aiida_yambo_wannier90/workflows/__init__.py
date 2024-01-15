@@ -27,7 +27,7 @@ from aiida_wannier90_workflows.utils.kpoints import (
     get_explicit_kpoints,
     get_mesh_from_kpoints,
 )
-from aiida_wannier90_workflows.utils.workflows.builder import set_kpoints
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_kpoints
 from aiida_wannier90_workflows.workflows import (
     Wannier90BandsWorkChain,
     Wannier90BaseWorkChain,
@@ -484,7 +484,7 @@ class YamboWannier90WorkChain(
         """
         # pylint: disable=import-outside-toplevel,protected-access
         # from aiida_quantumespresso.workflows.protocols.utils import recursive_merge
-        from aiida_wannier90_workflows.utils.workflows.builder import (
+        from aiida_wannier90_workflows.utils.workflows.builder.submit import (
             recursive_merge_builder,
         )
 
@@ -1121,9 +1121,7 @@ class YamboWannier90WorkChain(
                 inputs.ypp.QP_DB = yambo_wkchain.outputs.merged_QP
             else:
                 inputs.ypp.QP_DB = yambo_wkchain.outputs.QP_DB
-            inputs.parent_folder = self.ctx.wkchain_yambo_qp.called[
-                0
-            ].inputs.parent_folder
+            inputs.parent_folder = self.ctx.wkchain_yambo_qp.outputs.remote_folder.creator.outputs.remote_folder
 
         if self.should_run_wannier90_pp():
             inputs.ypp.nnkp_file = self.ctx.wkchain_wannier90_pp.outputs.nnkp_file

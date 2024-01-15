@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Run a full ``YamboWannier90WorkChain``.
 
-Usage: ./example_09.py
+Usage: ./example_complete_hBN.py
 
 To compare bands between QE, W90, W90 with QP, run in terminal
 ```
@@ -15,11 +15,9 @@ import click
 from aiida import cmdline, orm
 
 from aiida_wannier90_workflows.cli.params import RUN
-from aiida_wannier90_workflows.utils.workflows.builder import (
-    print_builder,
-    set_parallelization,
-    submit_and_add_group,
-)
+from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_num_bands
+from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
 
 
 def submit(group: orm.Group = None, run: bool = False):
@@ -38,24 +36,27 @@ def submit(group: orm.Group = None, run: bool = False):
     from aiida_yambo_wannier90.workflows import YamboWannier90WorkChain
 
     codes = {
-        "pw": "pw-6.8@hydralogin",
-        "pw2wannier90": "pw2wannier90@hydralogin",
-        "projwfc": "projwfc-6.8@hydralogin",
+        #"pw": "pw-7.1@hydralogin",
+        #"pw2wannier90": "pw2wannier90-7.1@hydralogin",
+        "pw": "pw-6.8-p2w_ham@hydralogin",
+        "pw2wannier90": "pw2wannier90-6.8-p2w_ham@hydralogin",
+        "projwfc": "projwfc-7.1@hydralogin",
         "wannier90": "w90@hydralogin",
-        "yambo": "yambo-RIMW@hydralogin",
-        "p2y": "p2y-devel@hydralogin",
-        "ypp": "ypp-RIMW@hydralogin",
+        "yambo": "yambo-5.1@hydralogin",
+        "p2y": "p2y-5.1@hydralogin",
+        "ypp": "ypp-5.1@hydralogin",
         "gw2wannier90": "gw2wannier90@hydralogin",
     }
 
     # Si2 from wannier90/example23
     #w90_wkchain = orm.load_node(222)  # Si
-    structure = orm.load_node(13496)  # Cu
+    structure = orm.load_node(161)  # hBN
 
     builder = YamboWannier90WorkChain.get_builder_from_protocol(
         codes=codes,
         structure=structure,
-        pseudo_family="PseudoDojo/0.4/LDA/SR/standard/upf",
+        pseudo_family="PseudoDojo/0.4/PBE/SR/standard/upf",
+        protocol="fast",
     )
 
     # Increase ecutwfc
@@ -121,13 +122,13 @@ def submit(group: orm.Group = None, run: bool = False):
                                  'what': ['gap_GG']},)
 
 
-    builder['yambo']['ywfl']['yres']['yambo']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 4, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
+    builder['yambo']['ywfl']['yres']['yambo']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
                                                 'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
     builder['yambo']['ywfl']['scf']['pw']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 16, 'num_mpiprocs_per_machine': 1}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=16'}}
         
-    builder['yambo']['ywfl']['nscf']['pw']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 2, 'num_cores_per_mpiproc': 2, 'num_mpiprocs_per_machine':8}, 'max_wallclock_seconds': 86400,
+    builder['yambo']['ywfl']['nscf']['pw']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 2, 'num_mpiprocs_per_machine':8}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=2'}}
 
 
@@ -143,12 +144,12 @@ def submit(group: orm.Group = None, run: bool = False):
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
     
-    builder['wannier90_qp']['wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 2, 'num_cores_per_mpiproc': 16, 'num_mpiprocs_per_machine': 1}, 'max_wallclock_seconds': 86400,
+    builder['wannier90_qp']['wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 16, 'num_mpiprocs_per_machine': 1}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=16'}}
     
     
     
-    builder['wannier90']['nscf']['pw']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines':4, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
+    builder['wannier90']['nscf']['pw']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines':1, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
 
@@ -158,7 +159,7 @@ def submit(group: orm.Group = None, run: bool = False):
     builder['wannier90']['pw2wannier90']['pw2wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 8, 'num_mpiprocs_per_machine':2}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=8'}}
     
-    builder['wannier90']['wannier90']['wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 4, 'num_cores_per_mpiproc':2, 'num_mpiprocs_per_machine': 8}, 'max_wallclock_seconds': 86400,
+    builder['wannier90']['wannier90']['wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc':2, 'num_mpiprocs_per_machine': 8}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=2'}}
 
     preprend_ypp_w = builder['ypp']['ypp']['metadata']['options']['prepend_text']
@@ -168,15 +169,56 @@ def submit(group: orm.Group = None, run: bool = False):
     preprend_ypp_qp = builder['ypp_QP']['ypp']['metadata']['options']['prepend_text']
     builder['ypp_QP']['ypp']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 16, 'num_mpiprocs_per_machine': 1}, 'max_wallclock_seconds': 86400,
                                             'withmpi': True, 'queue_name': 's3par', 'prepend_text': preprend_ypp_qp}}
+    
+    builder['gw2wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines':1, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
+                                            'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
-    #builder.pop('yambo')
+    # SKIP Convergence:
+    # 1. pop "yambo"
+    # 2. pop the "parent_folder" of "yambo_qp"
+    # 3. add the "GW_mesh"  KpointsData input.
+    
+    builder.pop('yambo') # to skip the convergence
+    builder['yambo_qp'].pop('parent_folder',None) # to skip the convergence
+    kpoints = orm.KpointsData() # to skip the convergence
+    kpoints.set_kpoints_mesh([8,8,4]) # to skip the convergence
+    builder.GW_mesh = kpoints # to skip the convergence
+    
+    #If we want W90 to use the GW mesh a priori. Usually, if converged for GW, it should be ok also for the Wannierization.
+    #builder.kpoints_force_gw = orm.Bool(True)
+    
+    # Projection settings:
+    del builder.wannier90.projwfc
+    builder.wannier90.wannier90.auto_energy_windows = False
+    builder.wannier90.wannier90.shift_energy_windows = True
+    
+    set_num_bands(
+        builder=builder.wannier90, 
+        num_bands=32, 
+        exclude_bands=range(1,5), 
+        process_class=Wannier90BandsWorkChain)
+    
+    params = builder.wannier90.wannier90.wannier90.parameters.get_dict()
+    params.pop('auto_projections', None)
+    params['num_wann'] = 16
+    params['dis_froz_max'] = 2
+    params = orm.Dict(dict=params)
+    builder.wannier90.wannier90.wannier90.parameters = params
+    builder.wannier90_qp.wannier90.parameters = params
+    builder.wannier90.wannier90.wannier90.projections = orm.List(list=['B:s', 'B:p', 'N:s', 'N:p',])
+    builder.wannier90_qp.wannier90.projections = builder.wannier90.wannier90.wannier90.projections
+    
+    builder['wannier90']['pw2wannier90']['pw2wannier90']['parameters'] = orm.Dict(dict={'inputpp': {'atom_proj': False}})
+    # End proj settings.
+    
+    # QP Settings:
     #builder['yambo_qp']['parent_folder'] = orm.load_node(13004).outputs.remote_folder
-    #builder['yambo_qp']['QP_subset_dict'] = orm.Dict(dict={
-    #                                    'qp_per_subset':50,
-    #                                    'parallel_runs':4,
-    #                                })
+    builder['yambo_qp']['QP_subset_dict'] = orm.Dict(dict={
+                                        'qp_per_subset':50,
+                                        'parallel_runs':4,
+                                   })
 
-    '''builder['yambo']['ywfl']['yres']['yambo']['parameters'] = orm.Dict(dict={'arguments': ['dipoles', 'ppa', 'HF_and_locXC', 'gw0', 'NLCC', 'rim_cut'],
+    builder['yambo_qp']['yres']['yambo']['parameters'] = orm.Dict(dict={'arguments': ['dipoles', 'ppa', 'HF_and_locXC', 'gw0', 'rim_cut'],
         'variables': {'Chimod': 'hartree',
         'DysSolver': 'n',
         'GTermKind': 'BG',
@@ -184,10 +226,11 @@ def submit(group: orm.Group = None, run: bool = False):
         'X_and_IO_nCPU_LinAlg_INV': [1, ''],
         'RandQpts': [5000000, ''],
         'RandGvec': [100, 'RL'],
-        'NGsBlkXp': [16, 'Ry'],
-        'BndsRnXp': [[1, 400], ''],
-        'GbndRnge': [[1, 400], ''],
-        'QPkrange': [[[1, 1, 32, 32]], '']}})'''
+        'NGsBlkXp': [6, 'Ry'],
+        'FFTGvecs': [60, 'Ry'],
+        'BndsRnXp': [[1, 200], ''],
+        'GbndRnge': [[1, 200], ''],
+        'QPkrange': [[[1, 1, 32, 32]], '']}})
 
     print_builder(builder)
 
