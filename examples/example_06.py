@@ -12,14 +12,12 @@ from aiida_wannier90_workflows.utils.kpoints import (
     get_explicit_kpoints_from_mesh,
     get_kpoints_from_bands,
 )
-from aiida_wannier90_workflows.utils.workflows.builder import (
-    get_metadata,
-    print_builder,
-    set_kpoints,
-    set_num_bands,
-    set_parallelization,
-    submit_and_add_group,
-)
+from aiida_wannier90_workflows.utils.pseudo.data import get_metadata
+from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_kpoints, set_num_bands
+from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
+from aiida_wannier90_workflows.common.types import WannierProjectionType
+
 from aiida_wannier90_workflows.workflows.bands import Wannier90BandsWorkChain
 from aiida_wannier90_workflows.workflows.base.wannier90 import Wannier90BaseWorkChain
 

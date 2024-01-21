@@ -20,6 +20,7 @@
 #
 # Updated on February 19th, 2017 by Antimo Marrazzo (antimo.marrazzo@epfl.ch)
 # Updated on October 7th, 2019 by Junfeng Qiao (qiaojunfeng@outlook.com)
+# Update on January 18, 2024 by Miki Bonacci (mikibonacci@hotmail.it)
 #
 import argparse
 from dataclasses import dataclass
@@ -772,6 +773,14 @@ def gw2wannier90(
     corrections_val = np.zeros((nk, nbndDFT + len(exbands)))
     corrections_mask = np.zeros_like(corrections_val, dtype=bool)
     idx_b = corrections[:, 0].astype(int) - 1
+    
+    # We may have negative band index:
+    
+    if len(np.where(idx_b<0)[0])>2:
+        idx_b = idx_b - np.min(idx_b)
+    
+    # end negative handling.
+    
     idx_k = corrections[:, 1].astype(int) - 1
     corrections_val[idx_k, idx_b] = corrections[:, 2]
     corrections_mask[idx_k, idx_b] = True

@@ -18,9 +18,9 @@ from aiida_wannier90_workflows.cli.params import RUN
 from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
 from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_num_bands
 from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
+from aiida_wannier90_workflows.common.types import WannierProjectionType
 
-
-def submit(group: orm.Group = None, run: bool = False):
+def submit(group: orm.Group = None, run: bool = False, projections="atomic_projectors_qe"):
     """Submit a ``YamboWannier90WorkChain`` from scratch.
 
     Run all the steps.
@@ -51,15 +51,18 @@ def submit(group: orm.Group = None, run: bool = False):
     # Si2 from wannier90/example23
     #w90_wkchain = orm.load_node(222)  # Si
     structure = orm.load_node(161)  # hBN
+    
+    wannier_projection_type=WannierProjectionType.ANALYTIC if projections == "analytic" else WannierProjectionType.ATOMIC_PROJECTORS_QE 
 
     builder = YamboWannier90WorkChain.get_builder_from_protocol(
         codes=codes,
         structure=structure,
         pseudo_family="PseudoDojo/0.4/PBE/SR/standard/upf",
         protocol="fast",
+        wannier_projection_type=wannier_projection_type,
     )
 
-    # Increase ecutwfc
+    # Increase ecutwfc, to have hig
     params = builder.yambo.ywfl.scf.pw.parameters.get_dict()
     params["SYSTEM"]["ecutwfc"] = 100
     builder.yambo.ywfl.scf.pw.parameters = orm.Dict(dict=params)
@@ -122,6 +125,8 @@ def submit(group: orm.Group = None, run: bool = False):
                                  'what': ['gap_GG']},)
 
 
+    
+    #### START computational resources settings.
     builder['yambo']['ywfl']['yres']['yambo']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines': 1, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
                                                 'withmpi': True, 'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
@@ -173,6 +178,9 @@ def submit(group: orm.Group = None, run: bool = False):
     builder['gw2wannier90']['metadata'] = {'options': {'stash': {}, 'resources': {'num_machines':1, 'num_cores_per_mpiproc': 1, 'num_mpiprocs_per_machine': 16}, 'max_wallclock_seconds': 86400,
                                             'queue_name': 's3par', 'prepend_text': 'export OMP_NUM_THREADS=1'}}
 
+    #### END computational resources settings.
+     
+     
     # SKIP Convergence:
     # 1. pop "yambo"
     # 2. pop the "parent_folder" of "yambo_qp"
@@ -180,57 +188,85 @@ def submit(group: orm.Group = None, run: bool = False):
     
     builder.pop('yambo') # to skip the convergence
     builder['yambo_qp'].pop('parent_folder',None) # to skip the convergence
+    
+    
+    # SKIP the yambo QP step:
+    # this will skip yambo_qp, but be sure to provide QP_DB and parent_folder to ypp inputs.
+    # In general, you can do this if you have already the yambo results.
+    builder.pop('yambo_qp')
+    builder.ypp.ypp.QP_DB = orm.load_node(12501)
+    builder.ypp.parent_folder = orm.load_node(12305).outputs.remote_folder
+    
+    # SET custom K-MESH:
     kpoints = orm.KpointsData() # to skip the convergence
     kpoints.set_kpoints_mesh([8,8,4]) # to skip the convergence
     builder.GW_mesh = kpoints # to skip the convergence
     
-    #If we want W90 to use the GW mesh a priori. Usually, if converged for GW, it should be ok also for the Wannierization.
-    #builder.kpoints_force_gw = orm.Bool(True)
+    #If we want W90 to use the GW mesh a priori, set the following to True. Usually, if converged for GW, it should be ok also for the Wannierization.
+    builder.kpoints_force_gw = orm.Bool(True)
     
-    # Projection settings:
-    del builder.wannier90.projwfc
-    builder.wannier90.wannier90.auto_energy_windows = False
-    builder.wannier90.wannier90.shift_energy_windows = True
+    # START projections settings:
     
     set_num_bands(
         builder=builder.wannier90, 
-        num_bands=32, 
-        exclude_bands=range(1,5), 
+        num_bands=32,                   # KS states used in the Wannierization
+        #exclude_bands=range(1,5), 
         process_class=Wannier90BandsWorkChain)
     
     params = builder.wannier90.wannier90.wannier90.parameters.get_dict()
-    params.pop('auto_projections', None)
-    params['num_wann'] = 16
-    params['dis_froz_max'] = 2
+
+    ## START explicit atomic projections:
+    if projections=="analytic":
+    
+        del builder.wannier90.projwfc
+        builder.wannier90.wannier90.auto_energy_windows = False
+        builder.wannier90.wannier90.shift_energy_windows = True
+        params['num_wann'] = 16
+        builder.wannier90.wannier90.wannier90.projections = orm.List(list=['B:s', 'B:p', 'N:s', 'N:p'])
+        builder.wannier90_qp.wannier90.projections = builder.wannier90.wannier90.wannier90.projections
+        params.pop('auto_projections', None) # Uncomment this if you want analytic atomic projections
+
+        #
+        # The following line can be also deleted.
+        builder['wannier90']['pw2wannier90']['pw2wannier90']['parameters'] = orm.Dict(dict={'inputpp': {'atom_proj': False}})
+    
+    ## END explicit atomic projections:
+    
+    # optional settings.
+    #params.pop('dis_proj_min', None)
+    #params.pop('dis_proj_max', None)
+    #params['num_wann'] = 16
+    #params['dis_froz_max'] = 2
+    
     params = orm.Dict(dict=params)
     builder.wannier90.wannier90.wannier90.parameters = params
     builder.wannier90_qp.wannier90.parameters = params
-    builder.wannier90.wannier90.wannier90.projections = orm.List(list=['B:s', 'B:p', 'N:s', 'N:p',])
-    builder.wannier90_qp.wannier90.projections = builder.wannier90.wannier90.wannier90.projections
     
-    builder['wannier90']['pw2wannier90']['pw2wannier90']['parameters'] = orm.Dict(dict={'inputpp': {'atom_proj': False}})
-    # End proj settings.
+    # END projections settings.
     
-    # QP Settings:
+    # START QP settings:
     #builder['yambo_qp']['parent_folder'] = orm.load_node(13004).outputs.remote_folder
-    builder['yambo_qp']['QP_subset_dict'] = orm.Dict(dict={
-                                        'qp_per_subset':50,
-                                        'parallel_runs':4,
-                                   })
+    if "yambo_qp" in builder.keys():
+        builder['yambo_qp']['QP_subset_dict'] = orm.Dict(dict={
+                                            'qp_per_subset':50,
+                                            'parallel_runs':4,
+                                    })
 
-    builder['yambo_qp']['yres']['yambo']['parameters'] = orm.Dict(dict={'arguments': ['dipoles', 'ppa', 'HF_and_locXC', 'gw0', 'rim_cut'],
-        'variables': {'Chimod': 'hartree',
-        'DysSolver': 'n',
-        'GTermKind': 'BG',
-        'PAR_def_mode': 'workload',
-        'X_and_IO_nCPU_LinAlg_INV': [1, ''],
-        'RandQpts': [5000000, ''],
-        'RandGvec': [100, 'RL'],
-        'NGsBlkXp': [6, 'Ry'],
-        'FFTGvecs': [60, 'Ry'],
-        'BndsRnXp': [[1, 200], ''],
-        'GbndRnge': [[1, 200], ''],
-        'QPkrange': [[[1, 1, 32, 32]], '']}})
+        builder['yambo_qp']['yres']['yambo']['parameters'] = orm.Dict(dict={'arguments': ['dipoles', 'ppa', 'HF_and_locXC', 'gw0', 'rim_cut'],
+            'variables': {'Chimod': 'hartree',
+            'DysSolver': 'n',
+            'GTermKind': 'BG',
+            'PAR_def_mode': 'workload',
+            'X_and_IO_nCPU_LinAlg_INV': [1, ''],
+            'RandQpts': [5000000, ''],
+            'RandGvec': [100, 'RL'],
+            'NGsBlkXp': [6, 'Ry'],
+            'FFTGvecs': [40, 'Ry'],
+            'BndsRnXp': [[1, 150], ''],
+            'GbndRnge': [[1, 150], ''],
+            'QPkrange': [[[1, 1, 32, 32]], '']}})
+    
+    # END QP settings.
 
     print_builder(builder)
 
@@ -246,7 +282,7 @@ def submit(group: orm.Group = None, run: bool = False):
 @RUN()
 def cli(group, run):
     """Run a ``YamboWannier90WorkChain``."""
-    submit(group, run)
+    submit(group, run, projections="analytic")
 
 
 if __name__ == "__main__":

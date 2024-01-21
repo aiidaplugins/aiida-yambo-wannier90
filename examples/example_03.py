@@ -11,12 +11,9 @@ from aiida_quantumespresso.workflows.pw.base import PwBaseWorkChain
 
 from aiida_wannier90_workflows.cli.params import RUN
 from aiida_wannier90_workflows.utils.kpoints import create_kpoints_from_mesh
-from aiida_wannier90_workflows.utils.workflows.builder import (
-    print_builder,
-    set_kpoints,
-    set_parallelization,
-    submit_and_add_group,
-)
+from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_kpoints, set_num_bands
+from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
 
 
 def submit(group: orm.Group = None, run: bool = False):

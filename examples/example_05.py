@@ -10,10 +10,9 @@ import click
 from aiida import cmdline, orm
 
 from aiida_wannier90_workflows.cli.params import RUN
-from aiida_wannier90_workflows.utils.workflows.builder import (
-    print_builder,
-    submit_and_add_group,
-)
+from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_num_bands
+from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
 
 from aiida_yambo_wannier90.calculations.gw2wannier90 import Gw2wannier90Calculation
 
