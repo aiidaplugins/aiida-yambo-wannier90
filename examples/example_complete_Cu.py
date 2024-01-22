@@ -195,9 +195,9 @@ def submit(group: orm.Group = None, run: bool = False, projections="atomic_proje
     # SKIP the yambo QP step:
     # this will skip yambo_qp, but be sure to provide QP_DB and parent_folder to ypp inputs.
     # In general, you can do this if you have already the yambo results.
-    #builder.pop('yambo_qp')
-    #builder.ypp.ypp.QP_DB = orm.load_node(13233)
-    #builder.ypp.parent_folder = orm.load_node(13069).outputs.remote_folder
+    builder.pop('yambo_qp')
+    builder.ypp.ypp.QP_DB = orm.load_node(15785)
+    builder.ypp.parent_folder = orm.load_node(15693).outputs.remote_folder
     
     # SET custom K-MESH:
     kpoints = orm.KpointsData() # to skip the convergence

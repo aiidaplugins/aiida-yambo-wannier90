@@ -774,18 +774,21 @@ def gw2wannier90(
     corrections_mask = np.zeros_like(corrections_val, dtype=bool)
     idx_b = corrections[:, 0].astype(int) - 1
     
+    print(idx_b)
     # We may have negative band index:
     
     if len(np.where(idx_b<0)[0])>2:
         idx_b = idx_b - np.min(idx_b)
     
     # end negative handling.
+    print(idx_b)
     
     idx_k = corrections[:, 1].astype(int) - 1
     corrections_val[idx_k, idx_b] = corrections[:, 2]
     corrections_mask[idx_k, idx_b] = True
     # Strip excluded bands
-    if len(exbands) > 0:
+    if len(exbands) > 0 and max(idx_b) > nbndDFT:
+        # The above second condition is imposed in case we do have some QP DB in which we have idx_b larger than the required dft bands.
         corrections_val = np.delete(corrections_val, exbands, axis=1)
         corrections_mask = np.delete(corrections_mask, exbands, axis=1)
     print("G0W0 QP corrections read from ", seedname + ".gw.unsorted.eig")
@@ -796,6 +799,7 @@ def gw2wannier90(
     #     if all((ik, ib) in list(corrections.keys()) for ik in range(NKPT))
     # ]
     providedGW = [ib for ib in range(nbndDFT) if np.all(corrections_mask[:, ib])]
+    print(providedGW)
     # print(providedGW)
     f_raw.write("------------------------------\n")
     f_raw.write("List of provided GW corrections (bands indexes)\n")
