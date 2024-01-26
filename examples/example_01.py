@@ -12,7 +12,7 @@ from aiida import cmdline, orm
 from aiida_wannier90_workflows.cli.params import RUN
 from aiida_wannier90_workflows.utils.workflows.builder.serializer import print_builder 
 from aiida_wannier90_workflows.utils.kpoints import get_explicit_kpoints_from_mesh
-from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_num_bands
+from aiida_wannier90_workflows.utils.workflows.builder.setter import set_parallelization, set_num_bands, set_kpoints
 from aiida_wannier90_workflows.utils.workflows.builder.submit import submit_and_add_group 
 from aiida_wannier90_workflows.common.types import WannierProjectionType
 from aiida_wannier90_workflows.workflows import Wannier90BandsWorkChain
