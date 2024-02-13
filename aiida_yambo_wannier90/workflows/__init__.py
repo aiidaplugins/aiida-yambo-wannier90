@@ -626,17 +626,6 @@ class YamboWannier90WorkChain(
         """Initialize context variables."""
 
         self.ctx.current_structure = self.inputs.structure
-
-        self.ctx.current_kpoint_path = None
-        self.ctx.current_bands_kpoints = None
-        
-        if "kpoint_path" in self.inputs:
-                self.ctx.current_kpoint_path = get_path_from_kpoints(
-                    self.inputs.kpoint_path
-                )
-
-        if "bands_kpoints" in self.inputs:
-                self.ctx.current_bands_kpoints = self.inputs.bands_kpoints
                 
 
         # Converged mesh from YamboConvergence
@@ -685,6 +674,11 @@ class YamboWannier90WorkChain(
 
     def should_run_seekpath(self):
         """Run seekpath if the `inputs.bands_kpoints` is not provided."""
+        if "bands_kpoints" in self.inputs:
+            if "kpoint_path" in self.inputs:
+                self.ctx.current_kpoint_path = get_path_from_kpoints(
+                    self.inputs.bands_kpoints
+                )
         return "bands_kpoints" not in self.inputs
 
     def run_seekpath(self):
@@ -702,14 +696,6 @@ class YamboWannier90WorkChain(
         self.ctx.current_structure = result["primitive_structure"]
         
         self.ctx.current_bands_kpoints = result["explicit_kpoints"]
-
-        # Add `kpoint_path` for Wannier bands
-        #self.ctx.current_kpoint_path = orm.Dict(
-        #    dict={
-         #       "path": result["parameters"]["path"],
-          #      "point_coords": result["parameters"]["point_coords"],
-           # }
-        #)
         
         structure_formula = self.inputs.structure.get_formula()
         primitive_structure_formula = result["primitive_structure"].get_formula()
@@ -1073,16 +1059,11 @@ class YamboWannier90WorkChain(
 
         inputs.wannier90.structure = self.ctx.current_structure
         
-        params = inputs.wannier90.parameters.get_dict()
-        params["bands_plot"] = False
+        #params = inputs.wannier90.parameters.get_dict()
+        #params["bands_plot"] = False
+        #inputs.wannier90.parameters = orm.Dict(params)
         
-        inputs.wannier90.parameters = orm.Dict(params)
-        
-        
-        '''if self.ctx.current_kpoint_path:
-            inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
-        if self.ctx.current_bands_kpoints:
-            inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints'''
+        inputs.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
@@ -1194,10 +1175,7 @@ class YamboWannier90WorkChain(
         )
 
         inputs.structure = self.ctx.current_structure
-        if self.ctx.current_kpoint_path:
-            inputs.kpoint_path = self.ctx.current_kpoint_path
-        if self.ctx.current_bands_kpoints:
-            inputs.bands_kpoints = self.ctx.current_bands_kpoints
+        inputs.kpoint_path = self.ctx.current_kpoint_path
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
@@ -1283,10 +1261,7 @@ class YamboWannier90WorkChain(
         )
 
         inputs.wannier90.structure = self.ctx.current_structure
-        if self.ctx.current_kpoint_path:
-            inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
-        if self.ctx.current_bands_kpoints:
-            inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
+        inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
             set_kpoints(
