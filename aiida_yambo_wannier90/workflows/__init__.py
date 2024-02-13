@@ -157,9 +157,9 @@ class YamboWannier90WorkChain(
             valid_type=orm.KpointsData,
             required=False,
             help=(
-                "Explicit kpoints to use for the band structure. "
+                "Explicit kpoints to use for the band structure. (specify also the labels) "
                 "If not specified, the workchain will run seekpath to generate "
-                "a primitive cell and a bands_kpoints. Specify either this or `bands_kpoints_distance`."
+                "a primitive cell and a bands_kpoints. Specify either this or `bands_kpoints_distance`.
             ),
         )
         spec.input(
@@ -630,8 +630,14 @@ class YamboWannier90WorkChain(
         self.ctx.current_kpoint_path = None
         self.ctx.current_bands_kpoints = None
         
+        if "kpoint_path" in self.inputs:
+                self.ctx.current_kpoint_path = get_path_from_kpoints(
+                    self.inputs.kpoint_path
+                )
+
         if "bands_kpoints" in self.inputs:
-            self.ctx.current_bands_kpoints = self.inputs.bands_kpoints
+                self.ctx.current_bands_kpoints = self.inputs.bands_kpoints
+                
 
         # Converged mesh from YamboConvergence
         self.ctx.kpoints_gw_conv = None
@@ -694,15 +700,16 @@ class YamboWannier90WorkChain(
         result = seekpath_structure_analysis(**args)
 
         self.ctx.current_structure = result["primitive_structure"]
-        #self.ctx.current_bands_kpoints = result["explicit_kpoints"]
+        
+        self.ctx.current_bands_kpoints = result["explicit_kpoints"]
 
         # Add `kpoint_path` for Wannier bands
-        self.ctx.current_kpoint_path = orm.Dict(
-            dict={
-                "path": result["parameters"]["path"],
-                "point_coords": result["parameters"]["point_coords"],
-            }
-        )
+        #self.ctx.current_kpoint_path = orm.Dict(
+        #    dict={
+         #       "path": result["parameters"]["path"],
+          #      "point_coords": result["parameters"]["point_coords"],
+           # }
+        #)
         
         structure_formula = self.inputs.structure.get_formula()
         primitive_structure_formula = result["primitive_structure"].get_formula()
