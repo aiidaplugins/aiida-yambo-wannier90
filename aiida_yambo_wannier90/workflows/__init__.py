@@ -1063,7 +1063,7 @@ class YamboWannier90WorkChain(
         #params["bands_plot"] = False
         #inputs.wannier90.parameters = orm.Dict(params)
         
-        inputs.bands_kpoints = self.ctx.current_bands_kpoints
+        inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
@@ -1174,8 +1174,8 @@ class YamboWannier90WorkChain(
             self.exposed_inputs(Wannier90OptimizeWorkChain, namespace="wannier90")
         )
 
-        inputs.structure = self.ctx.current_structure
-        inputs.kpoint_path = self.ctx.current_kpoint_path
+        inputs.wannier90.structure = self.ctx.current_structure
+        inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
