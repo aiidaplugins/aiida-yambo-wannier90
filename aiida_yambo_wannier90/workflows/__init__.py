@@ -1054,7 +1054,7 @@ class YamboWannier90WorkChain(
     def prepare_wannier90_pp_inputs(self) -> AttributeDict:
         """Prepare inputs for wannier90_pp, only for generating nnkp file."""
         inputs = AttributeDict(
-            self.exposed_inputs(Wannier90OptimizeWorkChain, namespace="wannier90")
+            self.exposed_inputs(Wannier90BaseWorkChain, namespace="wannier90_pp")
         )["wannier90"]
 
         inputs.wannier90.structure = self.ctx.current_structure
@@ -1174,8 +1174,8 @@ class YamboWannier90WorkChain(
             self.exposed_inputs(Wannier90OptimizeWorkChain, namespace="wannier90")
         )
 
-        inputs.wannier90.structure = self.ctx.current_structure
-        inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
+        inputs.structure = self.ctx.current_structure
+        inputs.kpoint_path = self.ctx.current_kpoint_path
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
