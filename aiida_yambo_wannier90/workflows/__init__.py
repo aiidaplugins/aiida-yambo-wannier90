@@ -627,6 +627,9 @@ class YamboWannier90WorkChain(
 
         self.ctx.current_structure = self.inputs.structure
 
+        self.ctx.current_kpoint_path = None
+        self.ctx.current_bands_kpoints = None
+        
         if "bands_kpoints" in self.inputs:
             self.ctx.current_bands_kpoints = self.inputs.bands_kpoints
 
@@ -691,8 +694,16 @@ class YamboWannier90WorkChain(
         result = seekpath_structure_analysis(**args)
 
         self.ctx.current_structure = result["primitive_structure"]
-        self.ctx.current_bands_kpoints = result["explicit_kpoints"]
+        #self.ctx.current_bands_kpoints = result["explicit_kpoints"]
 
+        # Add `kpoint_path` for Wannier bands
+        self.ctx.current_kpoint_path = orm.Dict(
+            dict={
+                "path": result["parameters"]["path"],
+                "point_coords": result["parameters"]["point_coords"],
+            }
+        )
+        
         structure_formula = self.inputs.structure.get_formula()
         primitive_structure_formula = result["primitive_structure"].get_formula()
         self.report(
@@ -1054,7 +1065,11 @@ class YamboWannier90WorkChain(
         )["wannier90"]
 
         inputs.wannier90.structure = self.ctx.current_structure
-        inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
+        
+        if self.ctx.current_kpoint_path:
+            inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
+        if self.ctx.current_bands_kpoints:
+            inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
@@ -1166,7 +1181,10 @@ class YamboWannier90WorkChain(
         )
 
         inputs.structure = self.ctx.current_structure
-        inputs.bands_kpoints = self.ctx.current_bands_kpoints
+        if self.ctx.current_kpoint_path:
+            inputs.kpoint_path = self.ctx.current_kpoint_path
+        if self.ctx.current_bands_kpoints:
+            inputs.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
@@ -1252,7 +1270,10 @@ class YamboWannier90WorkChain(
         )
 
         inputs.wannier90.structure = self.ctx.current_structure
-        inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
+        if self.ctx.current_kpoint_path:
+            inputs.wannier90.kpoint_path = self.ctx.current_kpoint_path
+        if self.ctx.current_bands_kpoints:
+            inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
             set_kpoints(
