@@ -159,7 +159,7 @@ class YamboWannier90WorkChain(
             help=(
                 "Explicit kpoints to use for the band structure. (specify also the labels) "
                 "If not specified, the workchain will run seekpath to generate "
-                "a primitive cell and a bands_kpoints. Specify either this or `bands_kpoints_distance`.
+                "a primitive cell and a bands_kpoints. Specify either this or `bands_kpoints_distance`."
             ),
         )
         spec.input(
