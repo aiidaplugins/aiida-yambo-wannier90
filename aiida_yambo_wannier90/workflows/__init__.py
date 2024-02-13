@@ -626,7 +626,9 @@ class YamboWannier90WorkChain(
         """Initialize context variables."""
 
         self.ctx.current_structure = self.inputs.structure
-                
+        
+        if "bands_kpoints" in self.inputs:
+            self.ctx.bands_kpoints = self.inputs.bands_kpoints     
 
         # Converged mesh from YamboConvergence
         self.ctx.kpoints_gw_conv = None
@@ -674,11 +676,6 @@ class YamboWannier90WorkChain(
 
     def should_run_seekpath(self):
         """Run seekpath if the `inputs.bands_kpoints` is not provided."""
-        if "bands_kpoints" in self.inputs:
-            if "kpoint_path" in self.inputs:
-                self.ctx.current_kpoint_path = get_path_from_kpoints(
-                    self.inputs.bands_kpoints
-                )
         return "bands_kpoints" not in self.inputs
 
     def run_seekpath(self):
@@ -1054,7 +1051,7 @@ class YamboWannier90WorkChain(
     def prepare_wannier90_pp_inputs(self) -> AttributeDict:
         """Prepare inputs for wannier90_pp, only for generating nnkp file."""
         inputs = AttributeDict(
-            self.exposed_inputs(Wannier90BaseWorkChain, namespace="wannier90_pp")
+            self.exposed_inputs(Wannier90OptimizeWorkChain, namespace="wannier90")
         )["wannier90"]
 
         inputs.wannier90.structure = self.ctx.current_structure
@@ -1175,7 +1172,7 @@ class YamboWannier90WorkChain(
         )
 
         inputs.structure = self.ctx.current_structure
-        inputs.kpoint_path = self.ctx.current_kpoint_path
+        inputs.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
