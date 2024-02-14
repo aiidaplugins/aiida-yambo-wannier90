@@ -157,7 +157,7 @@ class YamboWannier90WorkChain(
             valid_type=orm.KpointsData,
             required=False,
             help=(
-                "Explicit kpoints to use for the band structure. "
+                "Explicit kpoints to use for the band structure. (specify also the labels) "
                 "If not specified, the workchain will run seekpath to generate "
                 "a primitive cell and a bands_kpoints. Specify either this or `bands_kpoints_distance`."
             ),
@@ -626,9 +626,9 @@ class YamboWannier90WorkChain(
         """Initialize context variables."""
 
         self.ctx.current_structure = self.inputs.structure
-
+        
         if "bands_kpoints" in self.inputs:
-            self.ctx.current_bands_kpoints = self.inputs.bands_kpoints
+            self.ctx.bands_kpoints = self.inputs.bands_kpoints     
 
         # Converged mesh from YamboConvergence
         self.ctx.kpoints_gw_conv = None
@@ -691,8 +691,9 @@ class YamboWannier90WorkChain(
         result = seekpath_structure_analysis(**args)
 
         self.ctx.current_structure = result["primitive_structure"]
+        
         self.ctx.current_bands_kpoints = result["explicit_kpoints"]
-
+        
         structure_formula = self.inputs.structure.get_formula()
         primitive_structure_formula = result["primitive_structure"].get_formula()
         self.report(
@@ -1054,6 +1055,11 @@ class YamboWannier90WorkChain(
         )["wannier90"]
 
         inputs.wannier90.structure = self.ctx.current_structure
+        
+        #params = inputs.wannier90.parameters.get_dict()
+        #params["bands_plot"] = False
+        #inputs.wannier90.parameters = orm.Dict(params)
+        
         inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
         # Use commensurate kmesh
