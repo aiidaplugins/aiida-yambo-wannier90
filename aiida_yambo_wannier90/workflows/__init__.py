@@ -1056,9 +1056,9 @@ class YamboWannier90WorkChain(
 
         inputs.wannier90.structure = self.ctx.current_structure
         
-        #params = inputs.wannier90.parameters.get_dict()
-        #params["bands_plot"] = False
-        #inputs.wannier90.parameters = orm.Dict(params)
+        params = inputs.wannier90.parameters.get_dict()
+        params["bands_plot"] = False
+        inputs.wannier90.parameters = orm.Dict(params)
         
         inputs.wannier90.bands_kpoints = self.ctx.current_bands_kpoints
 
