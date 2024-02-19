@@ -697,6 +697,8 @@ class YamboWannier90WorkChain(
 
         self.ctx.current_structure = result["primitive_structure"]
         
+        self.current_explicit_kpoints = result["explicit_kpoints"]
+        
         # Add `kpoint_path` for Wannier bands
         self.ctx.current_kpoint_path = get_path_from_kpoints(
                 result["explicit_kpoints"]
@@ -1182,8 +1184,10 @@ class YamboWannier90WorkChain(
         )
 
         inputs.structure = self.ctx.current_structure
-        if self.ctx.current_kpoint_path:
-            inputs.wannier90.wannier90.kpoint_path = self.ctx.current_kpoint_path
+        if "bands_kpoints" in self.inputs:
+            inputs.wannier90.kpoint_path = self.inputs["bands_kpoints"]
+        elif self.ctx.current_kpoint_path:
+            inputs.wannier90.kpoint_path = self.ctx.current_explicit_kpoints
 
         # Use commensurate kmesh
         if self.ctx.kpoints_w90_input != self.ctx.kpoints_w90:
