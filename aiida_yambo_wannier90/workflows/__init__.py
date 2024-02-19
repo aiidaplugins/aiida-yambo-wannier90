@@ -697,7 +697,7 @@ class YamboWannier90WorkChain(
 
         self.ctx.current_structure = result["primitive_structure"]
         
-        self.current_explicit_kpoints = result["explicit_kpoints"]
+        self.ctx.current_explicit_kpoints = result["explicit_kpoints"]
         
         # Add `kpoint_path` for Wannier bands
         self.ctx.current_kpoint_path = get_path_from_kpoints(
